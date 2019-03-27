@@ -1,6 +1,6 @@
 {
   "name": "readable-to-readable",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Forwards the data of one Readable to another Readable",
   "main": "index.js",
   "scripts": {
