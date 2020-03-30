@@ -1,54 +1,60 @@
 # readable-to-readable
 
-ReadableToReadable forwards the data of one Readable to another Readable.
-This can be useful if a Readable must be wrapped into another Readable.
+`ReadableToReadable` forwards the data of another `Readable`.
+This can be useful if a Readable must be wrapped into another `Readable`.
 
 ## Usage
 
-The package returns a class.
-The constructor must be called with the input streams as the first parameter and the output stream as the second parameter.
-To forward the chunks, the `.forward()` method must be called.
-A good place to call the `.forward()` method, is the `._read()` method of the output stream.
+The package exports the `ReadableToReadable` class.
+It can be imported like this:
 
-### Methods
+```javascript
+const ReadableToReadable = require('readable-to-readable')
+````
 
-- `async forward()`: Forwards chunks until no more chunks are available or the high water mark of the output stream is reached.
-- `async destroy()`: Forwards the remaining chunks and closes the output stream after that.
+### ReadableToReadable (input, { map, ... })
 
-### Properties
+The `ReadableToReadable` class can be used as a base class to create the new `Readable`.
+The constructor must be called with the input stream as the first parameter.
+The following optional options can be given as the second argument:
+ 
+- `map`: A function that translates the incoming chunks.
+- others: Any other arguments will be forwarded to the `Readable` constructor.
 
-- `destroyed`: True once the destroy method was called.
-- `end`: True once the `end` event was emitted.
+### ReadableToReadable.readFrom (input, { map })
+
+The `readFrom` function returns a `read` function for `Readable` instances.
+It will forward the chunks from the given `input` `Readable`.
+The function can be useful to create more customized instances of `Readable`.
+The following optional options can be given as the second argument:
+
+- `map`: A function that translates the incoming chunks.
 
 ## Example
 
 Two streams are created in this example.
 Data is pushed to the `input` stream and read from the `output` stream.
-The `output` stream handles the forwarding.
+The `output` stream is a `ReadableToReadable` that takes care of forwarding and also translated the string to upper case.
 Once the data passed the two streams, it's written to the console.
-This is done till the `end` event was emitted.
+This is done until the `output` is finished.
 
-```
-const { Readable } = require('readable-stream')
-const ReadableToReadable = require('readable-to-readable')
+```javascript
+const { promisify } = require('util')
+const { finished, Readable } = require('readable-stream')
+const ReadableToReadable = require('..')
 
 async function main () {
   // just a plain Readable to push some data
-  const input = Readable({
+  const input = new Readable({
     read: () => {}
   })
 
   // in the output stream we forward the data from input whenever .read is called
-  const output = Readable({
-    read: () => {
-      readableToReadable.forward()
-    }
+  const output = new ReadableToReadable(input, {
+    map: chunk => chunk.toString().toUpperCase()
   })
 
-  // connect the streams
-  const readableToReadable = new ReadableToReadable(input, output)
-
-  // add some data and close the stream 
+  // add some data and close the stream
   input.push('a')
   input.push('b')
   input.push('c')
@@ -58,7 +64,7 @@ async function main () {
   output.on('data', chunk => console.log(chunk.toString()))
 
   // wait till the end event of output was emitted
-  await (new Promise(resolve => output.once('end', resolve)))
+  await promisify(finished)(output)
 }
 
 main()
