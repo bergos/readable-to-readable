@@ -67,7 +67,6 @@ describe('ReadableToReadable', () => {
   })
 
   it('should use the given map function to translate the chunks', async () => {
-
     const input = new Readable({ read: () => {} })
     const output = new ReadableToReadable(input, { map: v => v.toString().toUpperCase() })
 
@@ -117,7 +116,6 @@ describe('ReadableToReadable', () => {
     })
 
     it('should use the given map function to translate the chunks', async () => {
-
       const input = new Readable({ read: () => {} })
       const output = new Readable({
         read: ReadableToReadable.readFrom(input, {
@@ -136,4 +134,3 @@ describe('ReadableToReadable', () => {
     })
   })
 })
-
