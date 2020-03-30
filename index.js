@@ -1,57 +1,43 @@
-const nextLoop = require('./lib/nextLoop')
+const { finished, Readable } = require('readable-stream')
 
-class ReadableToReadable {
-  constructor (input, output) {
-    this.input = input
-    this.output = output
+function nextLoop () {
+  return new Promise(resolve => setTimeout(resolve, 0))
+}
 
-    this.destroyed = false
-    this.end = false // end event was emitted
-
-    this.input.once('end', () => this.destroy())
+class ReadableToReadable extends Readable {
+  constructor (input, { map, ...args } = {}) {
+    super({
+      read: ReadableToReadable.readFrom(input, { map }),
+      ...args
+    })
   }
 
-  /**
-   * Forwards chunks until ReadableToReadable gets destroyed or the output stream doesn't accept more chunks.
-   * Returns true if all currently available chunks were processed.
-   * Returns false if the output stream doesn't accept more chunks.
-   * @returns {Promise<boolean>}
-   */
-  async forward () {
-    do {
-      const chunk = this.input.read()
+  static readFrom (input, { map = v => v } = {}) {
+    let done = false
+
+    finished(input, () => {
+      done = true
+    })
+
+    const read = async function () {
+      const chunk = input.read()
 
       if (!chunk) {
+        if (done) {
+          return this.push(null)
+        }
+
         await nextLoop()
-
-        continue
+      } else {
+        if (!this.push(map(chunk))) {
+          return
+        }
       }
 
-      if (!this.output.push(chunk)) {
-        return false
-      }
-    } while (!this.destroyed)
-
-    return true
-  }
-
-  /**
-   * Destroys the ReadableToReadable and closes the output stream.
-   * Remaining chunks are processed before the stream is closed.
-   * @returns {Promise<void>}
-   */
-  async destroy () {
-    this.destroyed = true
-
-    // read any remaining chunks...
-    while (!await this.forward()) {
-      await nextLoop()
+      read.call(this)
     }
 
-    // ...before closing the stream
-    this.output.push(null)
-
-    this.end = true
+    return read
   }
 }
 
