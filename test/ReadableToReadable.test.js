@@ -1,7 +1,8 @@
 const { strictEqual } = require('assert')
 const getStream = require('get-stream')
 const { describe, it } = require('mocha')
-const { Readable } = require('readable-stream')
+const delay = require('promise-the-world/delay')
+const { finished, Readable } = require('readable-stream')
 const ReadableToReadable = require('..')
 
 describe('ReadableToReadable', () => {
@@ -80,6 +81,30 @@ describe('ReadableToReadable', () => {
     strictEqual(chunks, 'ABC')
   })
 
+  it('should not close at the end of input if end is false', async () => {
+    let done = false
+    const input = new Readable({ read: () => {} })
+    const output = new ReadableToReadable(input, { end: false })
+
+    input.push('a')
+    input.push('b')
+    input.push('c')
+    input.push(null)
+
+    finished(output, () => {
+      done = true
+    })
+
+    output.resume()
+
+    await delay(10)
+    strictEqual(done, false)
+
+    output.push(null)
+    await delay(10)
+    strictEqual(done, true)
+  })
+
   describe('readFrom', () => {
     it('should be a function', () => {
       strictEqual(typeof ReadableToReadable.readFrom, 'function')
@@ -131,6 +156,32 @@ describe('ReadableToReadable', () => {
       const chunks = await getStream(output)
 
       strictEqual(chunks, 'ABC')
+    })
+
+    it('should not close the output stream if end is false', async () => {
+      let done = false
+      const input = new Readable({ read: () => {} })
+      const output = new Readable({
+        read: ReadableToReadable.readFrom(input, { end: false })
+      })
+
+      input.push('a')
+      input.push('b')
+      input.push('c')
+      input.push(null)
+
+      finished(output, () => {
+        done = true
+      })
+
+      output.resume()
+
+      await delay(10)
+      strictEqual(done, false)
+
+      output.push(null)
+      await delay(10)
+      strictEqual(done, true)
     })
   })
 })

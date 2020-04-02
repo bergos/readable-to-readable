@@ -18,6 +18,7 @@ The `ReadableToReadable` class can be used as a base class to create the new `Re
 The constructor must be called with the input stream as the first parameter.
 The following optional options can be given as the second argument:
  
+- `end`: Close the instance at the end of the input stream. (default: `false`)
 - `map`: A function that translates the incoming chunks.
 - others: Any other arguments will be forwarded to the `Readable` constructor.
 
@@ -28,7 +29,10 @@ It will forward the chunks from the given `input` `Readable`.
 The function can be useful to create more customized instances of `Readable`.
 The following optional options can be given as the second argument:
 
+- `end`: Close the output stream at the end of the input stream. (default: `false`)
 - `map`: A function that translates the incoming chunks.
+
+The function returns `true` when the end of the input stream is reached and `false` for the case that the readable buffer is full. 
 
 ## Example
 
