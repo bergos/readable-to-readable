@@ -183,5 +183,39 @@ describe('ReadableToReadable', () => {
       await delay(10)
       strictEqual(done, true)
     })
+
+    it('should return false if the buffer is full', async () => {
+      const input = new Readable({ read: () => {}, objectMode: true })
+      const readFrom = ReadableToReadable.readFrom(input)
+      const output = new Readable({
+        objectMode: true,
+        highWaterMark: 2,
+        read: readFrom
+      })
+
+      input.push('a')
+      input.push('b')
+      input.push('c')
+      input.push(null)
+
+      const result = await readFrom.call(output)
+
+      strictEqual(result, false)
+    })
+
+    it('should return true if the end of the stream is reached', async () => {
+      const input = new Readable({ objectMode: true, read: () => {} })
+      const readFrom = ReadableToReadable.readFrom(input)
+      const output = new Readable({ objectMode: true, read: readFrom })
+
+      input.push('a')
+      input.push('b')
+      input.push('c')
+      input.push(null)
+
+      const result = await readFrom.call(output)
+
+      strictEqual(result, true)
+    })
   })
 })

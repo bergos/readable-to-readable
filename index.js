@@ -38,7 +38,7 @@ class ReadableToReadable extends Readable {
         }
       }
 
-      read.call(this)
+      return read.call(this)
     }
 
     return read
