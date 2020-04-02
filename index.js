@@ -5,14 +5,14 @@ function nextLoop () {
 }
 
 class ReadableToReadable extends Readable {
-  constructor (input, { map, ...args } = {}) {
+  constructor (input, { end = true, map, ...args } = {}) {
     super({
-      read: ReadableToReadable.readFrom(input, { map }),
+      read: ReadableToReadable.readFrom(input, { end, map }),
       ...args
     })
   }
 
-  static readFrom (input, { map = v => v } = {}) {
+  static readFrom (input, { end = true, map = v => v } = {}) {
     let done = false
 
     finished(input, () => {
@@ -23,14 +23,18 @@ class ReadableToReadable extends Readable {
       const chunk = input.read()
 
       if (!chunk) {
+        if (done && end) {
+          this.push(null)
+        }
+
         if (done) {
-          return this.push(null)
+          return true
         }
 
         await nextLoop()
       } else {
         if (!this.push(map(chunk))) {
-          return
+          return false
         }
       }
 
