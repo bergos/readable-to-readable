@@ -20,25 +20,25 @@ class ReadableToReadable extends Readable {
     })
 
     const read = async function () {
-      const chunk = input.read()
+      while (true) {
+        const chunk = input.read()
 
-      if (!chunk) {
-        if (done && end) {
-          this.push(null)
-        }
+        if (!chunk) {
+          if (done && end) {
+            this.push(null)
+          }
 
-        if (done) {
-          return true
-        }
+          if (done) {
+            return true
+          }
 
-        await nextLoop()
-      } else {
-        if (!this.push(map(chunk))) {
-          return false
+          await nextLoop()
+        } else {
+          if (!this.push(map(chunk))) {
+            return false
+          }
         }
       }
-
-      return read.call(this)
     }
 
     return read
